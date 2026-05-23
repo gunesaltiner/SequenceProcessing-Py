@@ -89,6 +89,34 @@ class ConvolutionalNeuralNetworkParameter(NeuralNetworkParameter):
         if class_label_size <= 0:
             raise ValueError("class_label_size must be a positive integer.")
 
+        for i in range(conv_size):
+            if conv_filters[i] <= 0:
+                raise ValueError(
+                    f"conv_filters[{i}] must be positive, got {conv_filters[i]}."
+                )
+            if conv_kernel_sizes[i] <= 0:
+                raise ValueError(
+                    f"conv_kernel_sizes[{i}] must be positive, got {conv_kernel_sizes[i]}."
+                )
+            if conv_strides[i] <= 0:
+                raise ValueError(
+                    f"conv_strides[{i}] must be positive, got {conv_strides[i]}."
+                )
+            if pool_kernel_sizes[i] < 0:
+                raise ValueError(
+                    f"pool_kernel_sizes[{i}] must be non-negative, got {pool_kernel_sizes[i]}."
+                )
+            if pool_kernel_sizes[i] > 0 and pool_strides[i] <= 0:
+                raise ValueError(
+                    f"pool_strides[{i}] must be positive when pooling is enabled, got {pool_strides[i]}."
+                )
+
+        for i in range(len(fc_hidden_layers)):
+            if fc_hidden_layers[i] <= 0:
+                raise ValueError(
+                    f"fc_hidden_layers[{i}] must be positive, got {fc_hidden_layers[i]}."
+                )
+
         self.__conv_filters = conv_filters
         self.__conv_kernel_sizes = conv_kernel_sizes
         self.__conv_strides = conv_strides

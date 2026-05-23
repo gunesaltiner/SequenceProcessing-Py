@@ -134,7 +134,7 @@ class Im2Col1D(Function):
         input_nodes[0].add(new_node)
         return new_node
 
-    def __repr__(self) -> str:
+    def toString(self) -> str:
         """
         Returns string representation.
 

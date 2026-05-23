@@ -2,6 +2,7 @@ from typing import List
 import random
 
 from ComputationalGraph.ComputationalGraph import ComputationalGraph
+from ComputationalGraph.Function.Dropout import Dropout
 from ComputationalGraph.Function.Softmax import Softmax
 from ComputationalGraph.Node.ComputationalNode import ComputationalNode
 from ComputationalGraph.Node.MultiplicationNode import MultiplicationNode
@@ -152,9 +153,18 @@ class ConvolutionalNeuralNetworkModel(ComputationalGraph):
         current_channels = self.__word_embedding_length
 
         # Convolutional block
-        # Each conv layer is Im2Col1D(is_biased=True) -> MultiplicationNode(W)  -> activation, optionally followed by MaxPool1D
-        # The is_biased flag on Im2Col1D appends a bias column, turning the output shape from (L_out, K*C_in) into (L_out, K*C_in + 1)
-        # conv weight matrix absorbs the bias as its last row
+        # In the AlexNet-NLP diagram these correspond to Conv1 through Conv5:
+        #   conv layer 0 = Conv1 (kernel=5, 96 filters, pool after)
+        #   conv layer 1 = Conv2 (kernel=5, 256 filters, pool after)
+        #   conv layer 2 = Conv3 (kernel=3, 384 filters, no pool)
+        #   conv layer 3 = Conv4 (kernel=3, 384 filters, no pool)
+        #   conv layer 4 = Conv5 (kernel=3, 256 filters, pool after)
+        #
+        # Each conv layer is Im2Col1D(is_biased=True) -> MultiplicationNode(W)
+        # -> activation, optionally followed by MaxPool1D.
+        # The is_biased flag on Im2Col1D appends a bias column, turning the
+        # output shape from (L_out, K*C_in) into (L_out, K*C_in + 1).
+        # The conv weight matrix absorbs the bias as its last row.
         for i in range(params.convSize()):
             kernel_size = params.getConvKernelSize(i)
             stride = params.getConvStride(i)
@@ -189,8 +199,18 @@ class ConvolutionalNeuralNetworkModel(ComputationalGraph):
         current = self.addEdge(current, Flatten(), True)
         flatten_features = current_length * current_channels
 
-        # Fully connected hidden layers. Each is MultiplicationNode(W) -> activation, with bias
+        # Fully connected hidden layers with Dropout.
+        #
+        # In the AlexNet-NLP diagram these correspond to:
+        #   fc_hidden_layers[0] = FC6 (4096 units)
+        #   fc_hidden_layers[1] = FC7 (4096 units)
+        #
+        # Each FC hidden layer is: MultiplicationNode(W) -> activation -> Dropout
+        # Dropout is applied between FC hidden layers to prevent overfitting,
+        # matching standard AlexNet practice. The dropout ratio comes from the
+        # parameter object (default 0.0 means no dropout).
         prev_features_with_bias = flatten_features + 1
+        dropout_ratio = params.getDropout()
 
         for i in range(params.fcSize()):
             hidden_size = params.getFcHiddenLayer(i)
@@ -204,10 +224,23 @@ class ConvolutionalNeuralNetworkModel(ComputationalGraph):
                 )
             )
             fc_out = self.addEdge(current, fc_weight)
-            current = self.addEdge(fc_out, params.getFcActivationFunction(i), True)
+
+            # If Dropout will follow, activation is NOT biased (Dropout adds bias instead).
+            # If no Dropout, activation itself adds the bias for the next layer.
+            if dropout_ratio > 0.0:
+                current = self.addEdge(fc_out, params.getFcActivationFunction(i), False)
+                current = self.addEdge(
+                    current,
+                    Dropout(dropout_ratio, random.Random(params.getSeed() + i)),
+                    True
+                )
+            else:
+                current = self.addEdge(fc_out, params.getFcActivationFunction(i), True)
+
             prev_features_with_bias = hidden_size + 1
 
-        # Final classification head: dense to softmax
+        # Final classification head (FC8 in the AlexNet-NLP diagram):
+        # dense layer mapping to class_label_size outputs, followed by Softmax.
         class_label_size = params.getClassLabelSize()
         output_weight = MultiplicationNode(
             Tensor(

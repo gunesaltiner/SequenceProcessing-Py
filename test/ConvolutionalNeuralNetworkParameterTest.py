@@ -183,6 +183,116 @@ class ConvolutionalNeuralNetworkParameterTest(unittest.TestCase):
                 class_label_size=0,
             )
 
+    def testNegativeKernelSizeRaises(self):
+        """
+        Tests that a non-positive conv kernel size raises ValueError.
+        """
+        with self.assertRaises(ValueError):
+            ConvolutionalNeuralNetworkParameter(
+                seed=1,
+                epoch=1,
+                optimizer=DummyOptimizer(),
+                initialization=DummyInitialization(),
+                loss=DummyFunction(),
+                conv_filters=[96],
+                conv_kernel_sizes=[0],
+                conv_strides=[1],
+                conv_activation_functions=[DummyFunction()],
+                pool_kernel_sizes=[0],
+                pool_strides=[0],
+                fc_hidden_layers=[64],
+                fc_activation_functions=[DummyFunction()],
+                class_label_size=5,
+            )
+
+    def testNegativeFilterCountRaises(self):
+        """
+        Tests that a non-positive filter count raises ValueError.
+        """
+        with self.assertRaises(ValueError):
+            ConvolutionalNeuralNetworkParameter(
+                seed=1,
+                epoch=1,
+                optimizer=DummyOptimizer(),
+                initialization=DummyInitialization(),
+                loss=DummyFunction(),
+                conv_filters=[-1],
+                conv_kernel_sizes=[3],
+                conv_strides=[1],
+                conv_activation_functions=[DummyFunction()],
+                pool_kernel_sizes=[0],
+                pool_strides=[0],
+                fc_hidden_layers=[64],
+                fc_activation_functions=[DummyFunction()],
+                class_label_size=5,
+            )
+
+    def testNegativeStrideRaises(self):
+        """
+        Tests that a non-positive stride raises ValueError.
+        """
+        with self.assertRaises(ValueError):
+            ConvolutionalNeuralNetworkParameter(
+                seed=1,
+                epoch=1,
+                optimizer=DummyOptimizer(),
+                initialization=DummyInitialization(),
+                loss=DummyFunction(),
+                conv_filters=[96],
+                conv_kernel_sizes=[3],
+                conv_strides=[0],
+                conv_activation_functions=[DummyFunction()],
+                pool_kernel_sizes=[0],
+                pool_strides=[0],
+                fc_hidden_layers=[64],
+                fc_activation_functions=[DummyFunction()],
+                class_label_size=5,
+            )
+
+    def testPoolEnabledWithZeroStrideRaises(self):
+        """
+        Tests that enabling pooling (kernel > 0) with stride <= 0 raises ValueError.
+        """
+        with self.assertRaises(ValueError):
+            ConvolutionalNeuralNetworkParameter(
+                seed=1,
+                epoch=1,
+                optimizer=DummyOptimizer(),
+                initialization=DummyInitialization(),
+                loss=DummyFunction(),
+                conv_filters=[96],
+                conv_kernel_sizes=[3],
+                conv_strides=[1],
+                conv_activation_functions=[DummyFunction()],
+                pool_kernel_sizes=[3],
+                pool_strides=[0],
+                fc_hidden_layers=[64],
+                fc_activation_functions=[DummyFunction()],
+                class_label_size=5,
+            )
+
+    def testNegativeFcHiddenLayerRaises(self):
+        """
+        Tests that a non-positive FC hidden layer size raises ValueError.
+        """
+        with self.assertRaises(ValueError):
+            ConvolutionalNeuralNetworkParameter(
+                seed=1,
+                epoch=1,
+                optimizer=DummyOptimizer(),
+                initialization=DummyInitialization(),
+                loss=DummyFunction(),
+                conv_filters=[96],
+                conv_kernel_sizes=[3],
+                conv_strides=[1],
+                conv_activation_functions=[DummyFunction()],
+                pool_kernel_sizes=[0],
+                pool_strides=[0],
+                fc_hidden_layers=[0],
+                fc_activation_functions=[DummyFunction()],
+                class_label_size=5,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
